@@ -1,0 +1,111 @@
+local function CreateGreenDot()
+    local mouse = game.Players.LocalPlayer:GetMouse()
+    local target = nil
+    local distance = math.huge
+
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer then
+            local character = player.Character
+            if character then
+                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                if humanoidRootPart then
+                    local screenPos = workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position)
+                    local cursorPos = Vector2.new(mouse.X, mouse.Y)
+                    local dist = (screenPos - cursorPos).Magnitude
+
+                    if dist < distance then
+                        distance = dist
+                        target = humanoidRootPart
+                    end
+                end
+            end
+        end
+    end
+
+    if target then
+        local greenDot = Drawing.new("Circle")
+        greenDot.Transparency = 1
+        greenDot.Visible = true
+        greenDot.Position = Vector2.new(target.Position.X, target.Position.Y)
+        greenDot.Radius = greenDotSize
+        greenDot.Color = Color3.fromRGB(0, 255, 0)
+
+        if purpleCircleEnabled then
+            local purpleCircle = Drawing.new("Circle")
+            purpleCircle.Transparency = 1
+            purpleCircle.Visible = true
+            purpleCircle.Position = Vector2.new(target.Position.X, target.Position.Y - greenDotSize - purpleCircleSize)
+            purpleCircle.Radius = purpleCircleSize
+            purpleCircle.Color = Color3.fromRGB(128, 0, 128)
+        end
+    end
+end
+
+local function PressKey(key)
+    local input = game.Players.LocalPlayer:GetMouse()
+    if input then
+        input.KeyDown:Fire(key)
+        wait()
+        input.KeyUp:Fire(key)
+    end
+end
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if getgenv().Underground == true then
+        local character = game.Players.LocalPlayer.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid.FloorMaterial == Enum.Material.Air then
+            local ray = Ray.new(character.HumanoidRootPart.Position, Vector3.new(0, -1, 0) * 1000)
+            local hit, pos, normal = workspace:FindPartOnRayWithIgnoreList(ray, {character})
+            if hit then
+                character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 2, 0))
+            end
+        end
+    end
+
+    if getgenv().Sky == true then 
+        local character = game.Players.LocalPlayer.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid.FloorMaterial == Enum.Material.Air then
+            local ray = Ray.new(character.HumanoidRootPart.Position, Vector3.new(0, -1, 0) * 1000)
+            local hit, pos, normal = workspace:FindPartOnRayWithIgnoreList(ray, {character})
+            if hit then
+                character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, getgenv().SkyAmount, 0))
+            end
+        end
+    end
+
+    -- Silent Aim and FOV
+    if Silent.enabled and Silent.keybindenabled and UserPressedKey(Silent.keybind) then
+        local target = GetTarget()
+
+        if target then
+            local targetPosition = target[Silent.aimpart].Position
+
+            local aimDirection
+            if Silent.predict then
+                aimDirection = PredictAim(targetPosition, Silent.prediction)
+            else
+                aimDirection = (targetPosition - Player.Character.Head.Position).Unit
+            end
+
+            AimAtTarget(target[Silent.aimpart], aimDirection)
+        end
+    end
+
+    if silentfov.visible then
+        DrawFOVIndicator(silentfov.radius)
+    end
+
+    if greenDotEnabled then
+        CreateGreenDot()
+    end
+
+    if macroEnabled and UserPressedKey(macroKey) then
+        PressKey(Enum.KeyCode.I)
+        PressKey(Enum.KeyCode.O)
+    end
+
+    UpdateGameLogic()
+    RenderGame()
+end)
